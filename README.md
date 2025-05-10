@@ -63,7 +63,7 @@ To clean and populate the datalake, use the following scripts:
   files have now been moved from staging to raw
 
 ## Ingest Data
-Run the ingestion script to process and load data from staging into the datalake:
+Run the ingestion script to process and load data from 'raw'
 ```bash
 poetry run python patent_scraper/src/data_ingest.py
 ```
