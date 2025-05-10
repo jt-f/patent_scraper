@@ -6,94 +6,73 @@ import argparse
 
 def archive_raw_file(zip_file_path, batch_dir):
     """
-    Moves the raw ZIP file to the archive directory after successful processing.
-    
+    Move the raw ZIP file to the archive directory after successful processing.
+
     Args:
         zip_file_path (str): Path to the raw ZIP file
         batch_dir (str): Path to the prepared batch directory (for reference)
-        
+
     Returns:
         bool: True if archiving was successful, False otherwise
     """
     try:
-        # Create archive directory path
         archive_dir = os.path.join("datalake", "archived", "patents")
         os.makedirs(archive_dir, exist_ok=True)
-        
-        # Get the batch timestamp from the prepared directory name
         batch_name = os.path.basename(batch_dir)
-        
-        # Create archive filename with batch reference
         archive_filename = f"{os.path.basename(zip_file_path)}.{batch_name}"
         archive_path = os.path.join(archive_dir, archive_filename)
-        
-        # Move the file
         shutil.move(zip_file_path, archive_path)
         print(f"Archived raw file to: {archive_path}")
         return True
-        
-    except Exception as e:
-        print(f"Error archiving raw file: {e}")
+    except Exception as exc:
+        print(f"Error archiving raw file: {exc}")
         return False
 
 def process_patent_zip(zip_file_path):
     """
-    Uncompresses a patent ZIP file and moves it to the prepared directory.
-    
+    Uncompress a patent ZIP file and move it to the prepared directory.
+
     Args:
         zip_file_path (str): Path to the ZIP file in the raw directory
-        
+
     Returns:
-        str: Path to the uncompressed directory in prepared, or None if failed
+        str or None: Path to the uncompressed directory in prepared, or None if failed
     """
     if not os.path.exists(zip_file_path):
         print(f"Error: ZIP file not found at {zip_file_path}")
         return None
-        
-    # Create prepared directory path
     prepared_dir = os.path.join("datalake", "prepared", "patents")
     os.makedirs(prepared_dir, exist_ok=True)
-    
-    # Create a timestamped directory for this batch
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     batch_dir = os.path.join(prepared_dir, f"batch_{timestamp}")
     os.makedirs(batch_dir, exist_ok=True)
-    
     try:
         print(f"Uncompressing {zip_file_path} to {batch_dir}...")
         with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
             zip_ref.extractall(batch_dir)
-            
-        # Verify extraction
         extracted_files = os.listdir(batch_dir)
         if not extracted_files:
             print("Error: No files were extracted from the ZIP")
             shutil.rmtree(batch_dir)
             return None
-            
         print(f"Successfully extracted {len(extracted_files)} files to {batch_dir}")
-        
-        # Archive the raw file after successful processing
         if not archive_raw_file(zip_file_path, batch_dir):
             print("Warning: Failed to archive raw file")
-            
         return batch_dir
-        
     except zipfile.BadZipFile:
         print(f"Error: {zip_file_path} is not a valid ZIP file")
         if os.path.exists(batch_dir):
             shutil.rmtree(batch_dir)
         return None
-    except Exception as e:
-        print(f"Error during extraction: {e}")
+    except Exception as exc:
+        print(f"Error during extraction: {exc}")
         if os.path.exists(batch_dir):
             shutil.rmtree(batch_dir)
         return None
 
-
 def split_concatenated_xml(concatenated_xml_file_path):
     """
-    Splits a concatenated USPTO XML file into a list of individual XML document strings.
+    Split a concatenated USPTO XML file into a list of individual XML document strings.
 
     Args:
         concatenated_xml_file_path (str): Path to the concatenated XML file.
