@@ -3,6 +3,9 @@
 ## Introduction
 `patent_scraper` is a modular Python project for scraping, storing, and analyzing patent data. It provides tools to build a local datalake, ingest patent data, and run analytics via a web server.
 
+## Design Document
+https://docs.google.com/document/d/1DwCC7kN6gFtDVII51bsQtr9G3vYPQSnTA7sJBCWOMBY/edit?usp=sharing
+
 ## Overview of Modules
 - **data_ingest.py**: Handles ingestion of patent data into the datalake.
 - **data_prepare.py**: Prepares and cleans patent data for further processing.
