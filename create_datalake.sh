@@ -81,5 +81,5 @@ for subdir in "${ARCHIVED_SUBDIRS[@]}"; do
 done
 
 echo "Data lake structure created successfully!"
-echo "Directory structure:"
-tree "$DATALAKE_ROOT" 
+echo "Structure:"
+find "$DATALAKE_ROOT" -type d | sort | sed -e "s/[^-][^\/]*\//  |/g" -e "s/|\([^ ]\)/|-\1/"
