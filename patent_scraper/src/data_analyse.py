@@ -99,7 +99,17 @@ def filter_by_cpc_classification(patents: List[Dict], cpc_class: str, use_regex:
 
 # Flask routes
 @app.route('/api/inventors', methods=['GET'])
-def get_inventors():
+def get_inventors():    
+    """
+    Retrieve a list of distinct inventors from the loaded patent data.
+    Optional query parameters:
+        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
+        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
+    Returns:
+        JSON array of inventor names.
+    Example:
+        GET /api/inventors?cpc_class=G06F&use_regex=false
+    """
     cpc_class = request.args.get('cpc_class')
     use_regex = request.args.get('use_regex', 'false').lower() == 'true'
     
@@ -113,6 +123,16 @@ def get_inventors():
 
 @app.route('/api/assignees', methods=['GET'])
 def get_assignees():
+    """
+    Retrieve a list of distinct assignees from the loaded patent data.
+    Optional query parameters:
+        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
+        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
+    Returns:
+        JSON array of assignee names.
+    Example:
+        GET /api/assignees?cpc_class=G06F&use_regex=true
+    """
     cpc_class = request.args.get('cpc_class')
     use_regex = request.args.get('use_regex', 'false').lower() == 'true'
     
@@ -126,6 +146,16 @@ def get_assignees():
 
 @app.route('/api/titles', methods=['GET'])
 def get_titles():
+    """
+    Retrieve a list of distinct patent titles from the loaded patent data.
+    Optional query parameters:
+        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
+        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
+    Returns:
+        JSON array of patent titles.
+    Example:
+        GET /api/titles?cpc_class=G06F&use_regex=false
+    """
     cpc_class = request.args.get('cpc_class')
     use_regex = request.args.get('use_regex', 'false').lower() == 'true'
     
@@ -139,6 +169,16 @@ def get_titles():
 
 @app.route('/api/summary', methods=['GET'])
 def get_summary():
+    """
+    Retrieve a summary of inventors, assignees, and titles from the loaded patent data.
+    Optional query parameters:
+        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
+        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
+    Returns:
+        JSON object with keys: 'inventors', 'assignees', 'titles'.
+    Example:
+        GET /api/summary?cpc_class=G06F&use_regex=true
+    """
     cpc_class = request.args.get('cpc_class')
     use_regex = request.args.get('use_regex', 'false').lower() == 'true'
     
@@ -156,7 +196,13 @@ def get_summary():
 
 @app.route('/api/debug', methods=['GET'])
 def debug_data():
-    """Endpoint to debug the structure of the loaded patent data."""
+    """
+    Endpoint to debug the structure of the loaded patent data.
+    Returns:
+        JSON object with metadata about the loaded data and a sample record.
+    Example:
+        GET /api/debug
+    """
     if not PATENTS_DATA:
         return jsonify({"error": "No patent data loaded"})
     
