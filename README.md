@@ -160,3 +160,4 @@ graph TD
 
 ## FUTURE
 - Validation of XML files
+- Proper operation of datalake archiving etc
