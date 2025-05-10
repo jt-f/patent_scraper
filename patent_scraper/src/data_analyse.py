@@ -6,227 +6,124 @@ from typing import List, Dict, Set
 from pathlib import Path
 import logging
 import re
+from functools import wraps
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Directory containing patent JSON files
 PATENTS_DIR = Path("datalake/transformed/patents")
+PATENTS_DATA: List[Dict] = []
 
-# Global variable to store loaded patents
-PATENTS_DATA = []
-
-def load_patent_data() -> List[Dict]:
-    """Load all patent JSON files from the patents directory."""
+def load_flattened_patent_data() -> List[Dict]:
+    """Load and flatten all patent JSON files from the patents directory into a single list of patent dicts."""
     patents = []
-    
     logger.info(f"Attempting to load patents from: {PATENTS_DIR.absolute()}")
-    
     if not PATENTS_DIR.exists():
         logger.error(f"Directory does not exist: {PATENTS_DIR.absolute()}")
         return patents
-    
     json_files = list(PATENTS_DIR.glob("*.json"))
     logger.info(f"Found {len(json_files)} JSON files")
-    
     for json_file in json_files:
         try:
             logger.info(f"Loading file: {json_file}")
             with open(json_file, 'r', encoding='utf-8') as f:
-                patent_data = json.load(f)
-                patents.append(patent_data)
-                logger.info(f"Successfully loaded {json_file}")
+                file_data = json.load(f)
+                if isinstance(file_data, list):
+                    patents.extend(file_data)
+                elif isinstance(file_data, dict):
+                    patents.append(file_data)
+            logger.info(f"Successfully loaded {json_file}")
         except Exception as e:
             logger.error(f"Error loading {json_file}: {str(e)}")
-    
-
-    logger.info(f"Total patent files loaded: {len(patents)}")
+    logger.info(f"Total patent records loaded: {len(patents)}")
     return patents
 
+# Helper functions for extracting distinct fields
+
 def get_distinct_inventors(patents: List[Dict]) -> Set[str]:
-    """Get all distinct inventors from the patent data."""
-    inventors = set()
-    for patent in patents:
-        if patent.get('inventors'):
-            print(patent['inventors'])
-            for a in patent['inventors']:
-                inventors.add(a)
-    return inventors
+    """Return all distinct inventors from the patent data."""
+    return {inventor for patent in patents for inventor in patent.get('inventors', [])}
 
 def get_distinct_assignees(patents: List[Dict]) -> Set[str]:
-    """Get all distinct assignees from the patent data."""
-    assignees = set()
-    for patent in patents:
-        if patent.get('assignees'):
-            print(patent['assignees'])
-            for a in patent['assignees']:
-                assignees.add(a)
-            
-    return assignees
+    """Return all distinct assignees from the patent data."""
+    return {assignee for patent in patents for assignee in patent.get('assignees', [])}
 
 def get_distinct_titles(patents: List[Dict]) -> Set[str]:
-    """Get all distinct patent titles."""
-    titles = set()
-    for patent in patents:
-        if patent.get('invention_title'):
-            titles.add(patent['invention_title'])
-    return titles
+    """Return all distinct patent titles."""
+    return {patent['invention_title'] for patent in patents if patent.get('invention_title')}
 
-def filter_by_cpc_classification(patents: List[Dict], cpc_class: str, use_regex: bool = False) -> List[Dict]:
-    """Filter patents by CPC classification."""
+# Filtering logic
+
+def filter_patents_by_cpc(patents: List[Dict], cpc_class: str = None, use_regex: bool = False) -> List[Dict]:
+    """Filter patents by CPC classification, supporting regex if specified."""
+    if not cpc_class:
+        return patents
     if use_regex:
-        pattern = re.compile(cpc_class)
+        try:
+            pattern = re.compile(cpc_class)
+        except re.error as e:
+            logger.error(f"Invalid regex pattern for CPC class: {cpc_class} ({e})")
+            return []
+        return [p for p in patents if any(pattern.search(cpc) for cpc in p.get('cpc_classifications', []))]
+    return [p for p in patents if any(cpc_class in cpc for cpc in p.get('cpc_classifications', []))]
 
-        results = []
-        for patent_file in patents:
+# Decorator for extracting and filtering query params
 
-            for p in patent_file:
-                if p.get('cpc_classifications'):
-                    for cpc in p['cpc_classifications']:
-                        if pattern.search(cpc):
-                            results.append(p)
-                        break
-        print(results)
-        print('*******')
-        return results
-    else:
-        return [p for p in patents 
-                if 'cpc_classifications' in p and 
-                any(cpc_class in cpc for cpc in p['cpc_classifications'])]
+def with_filtered_patents(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        cpc_class = request.args.get('cpc_class')
+        use_regex = request.args.get('use_regex', 'false').lower() == 'true'
+        filtered = filter_patents_by_cpc(PATENTS_DATA, cpc_class, use_regex)
+        return func(filtered, *args, **kwargs)
+    return wrapper
 
-# Flask routes
 @app.route('/api/inventors', methods=['GET'])
-def get_inventors():    
-    """
-    Retrieve a list of distinct inventors from the loaded patent data.
-    Optional query parameters:
-        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
-        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
-    Returns:
-        JSON array of inventor names.
-    Example:
-        GET /api/inventors?cpc_class=G06F&use_regex=false
-    """
-    cpc_class = request.args.get('cpc_class')
-    use_regex = request.args.get('use_regex', 'false').lower() == 'true'
-    
-    patents = PATENTS_DATA
-    if cpc_class:
-        patents = filter_by_cpc_classification(patents, cpc_class, use_regex)
-    else:
-        patents = PATENTS_DATA[0]
-    inventors = get_distinct_inventors(patents)
-    return jsonify(list(inventors))
+@with_filtered_patents
+def api_inventors(filtered_patents):
+    """Return a list of distinct inventors from the loaded patent data."""
+    if not filtered_patents:
+        return jsonify([])
+    return jsonify(sorted(get_distinct_inventors(filtered_patents)))
 
 @app.route('/api/assignees', methods=['GET'])
-def get_assignees():
-    """
-    Retrieve a list of distinct assignees from the loaded patent data.
-    Optional query parameters:
-        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
-        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
-    Returns:
-        JSON array of assignee names.
-    Example:
-        GET /api/assignees?cpc_class=G06F&use_regex=true
-    """
-    cpc_class = request.args.get('cpc_class')
-    use_regex = request.args.get('use_regex', 'false').lower() == 'true'
-    
-    patents = PATENTS_DATA
-    if cpc_class:
-        patents = filter_by_cpc_classification(patents, cpc_class, use_regex)
-    else:
-        patents = PATENTS_DATA[0]
-    assignees = get_distinct_assignees(patents)
-    return jsonify(list(assignees))
+@with_filtered_patents
+def api_assignees(filtered_patents):
+    """Return a list of distinct assignees from the loaded patent data."""
+    if not filtered_patents:
+        return jsonify([])
+    return jsonify(sorted(get_distinct_assignees(filtered_patents)))
 
 @app.route('/api/titles', methods=['GET'])
-def get_titles():
-    """
-    Retrieve a list of distinct patent titles from the loaded patent data.
-    Optional query parameters:
-        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
-        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
-    Returns:
-        JSON array of patent titles.
-    Example:
-        GET /api/titles?cpc_class=G06F&use_regex=false
-    """
-    cpc_class = request.args.get('cpc_class')
-    use_regex = request.args.get('use_regex', 'false').lower() == 'true'
-    
-    if cpc_class:
-        patents = filter_by_cpc_classification(PATENTS_DATA, cpc_class, use_regex)
-    else:
-        patents = PATENTS_DATA[0]
-    
-    titles = get_distinct_titles(patents)
-    return jsonify(list(titles))
+@with_filtered_patents
+def api_titles(filtered_patents):
+    """Return a list of distinct patent titles from the loaded patent data."""
+    if not filtered_patents:
+        return jsonify([])
+    return jsonify(sorted(get_distinct_titles(filtered_patents)))
 
 @app.route('/api/summary', methods=['GET'])
-def get_summary():
-    """
-    Retrieve a summary of inventors, assignees, and titles from the loaded patent data.
-    Optional query parameters:
-        - cpc_class: Filter patents by CPC classification (supports regex if use_regex=true)
-        - use_regex: Set to 'true' to interpret cpc_class as a regex (default: false)
-    Returns:
-        JSON object with keys: 'inventors', 'assignees', 'titles'.
-    Example:
-        GET /api/summary?cpc_class=G06F&use_regex=true
-    """
-    cpc_class = request.args.get('cpc_class')
-    use_regex = request.args.get('use_regex', 'false').lower() == 'true'
-    
-    if cpc_class:
-        patents = filter_by_cpc_classification(PATENTS_DATA, cpc_class, use_regex)
-    else:
-        patents = PATENTS_DATA[0]
-    
+@with_filtered_patents
+def api_summary(filtered_patents):
+    """Return a summary of inventors, assignees, and titles from the loaded patent data."""
+    if not filtered_patents:
+        return jsonify({'inventors': [], 'assignees': [], 'titles': []})
     summary = {
-        'inventors': list(get_distinct_inventors(patents)),
-        'assignees': list(get_distinct_assignees(patents)),
-        'titles': list(get_distinct_titles(patents))
+        'inventors': sorted(get_distinct_inventors(filtered_patents)),
+        'assignees': sorted(get_distinct_assignees(filtered_patents)),
+        'titles': sorted(get_distinct_titles(filtered_patents))
     }
     return jsonify(summary)
 
-@app.route('/api/debug', methods=['GET'])
-def debug_data():
-    """
-    Endpoint to debug the structure of the loaded patent data.
-    Returns:
-        JSON object with metadata about the loaded data and a sample record.
-    Example:
-        GET /api/debug
-    """
-    if not PATENTS_DATA:
-        return jsonify({"error": "No patent data loaded"})
-    
-    sample = PATENTS_DATA[0][0] if PATENTS_DATA[0] else {}
-    
-    result = {
-        "patent_data_length": len(PATENTS_DATA),
-        "first_file_length": len(PATENTS_DATA[0]) if PATENTS_DATA else 0,
-        "sample_keys": list(sample.keys()) if sample else [],
-        "inventors_field": sample.get("inventors", []) if sample else [],
-        "assignees_field": sample.get("assignees", []) if sample else [],
-        "title_field": sample.get("invention_title", "") if sample else ""
-    }
-    
-    return jsonify(result)
+
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
     logger.info(f"Current working directory: {os.getcwd()}")
     logger.info(f"Looking for patents in: {PATENTS_DIR.absolute()}")
-    
-    # Load patent data at startup
     logger.info("Loading patent data...")
-    PATENTS_DATA = load_patent_data()
-    logger.info(f"Loaded {len(PATENTS_DATA)} patents into memory")
-    
+    PATENTS_DATA = load_flattened_patent_data()
+    logger.info(f"Loaded {len(PATENTS_DATA)} patent records into memory")
     app.run(debug=True, port=5000)
