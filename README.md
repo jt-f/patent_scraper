@@ -61,14 +61,14 @@ To clean and populate the datalake, use the following scripts:
 
 - **Clean the datalake:**
   ```bash
-  ./datalake/clean_datalake.sh
+  ./cleanup_datalake.sh
   ```
   everything historical has been removed, except from staging.
   You can use this script again to cleanup later before running again, if desired.
 
 - **Populate the datalake:**
   ```bash
-  ./datalake/populate_datalake.sh
+  ./populate_datalake.sh
   ```
   files have now been moved from staging to raw
 
