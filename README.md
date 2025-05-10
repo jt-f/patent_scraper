@@ -90,7 +90,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional): Set to `true` to interpret `cpc_class` as a regex (default: false)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/inventors?cpc_class=G06F&use_regex=false"
+  curl "http://localhost:5000/api/inventors?cpc_class=^G16B&use_regex=true"
   ```
 - **Response:**
   ```json
@@ -104,7 +104,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/assignees?cpc_class=G06F&use_regex=true"
+  curl "http://localhost:5000/api/assignees?cpc_class=^G16B&use_regex=true"
   ```
 - **Response:**
   ```json
@@ -118,7 +118,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/titles?cpc_class=G06F"
+  curl "http://localhost:5000/api/titles?cpc_class=^G16B&use_regex=true"
   ```
 - **Response:**
   ```json
@@ -132,7 +132,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/summary?cpc_class=G06F&use_regex=true"
+  curl "http://localhost:5000/api/summary?cpc_class=^G16B&use_regex=true"
   ```
 - **Response:**
   ```json
