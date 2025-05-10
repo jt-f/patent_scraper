@@ -40,9 +40,15 @@ To create a mock datalake structure:
 ## Get some data
 Place any downloaded patent zip files into the appropriate datalake directory as needed.
 Currently supports: https://data.uspto.gov/ui/datasets/products/files/PTGRXML/{year}/*.zip
-Recommended: https://data.uspto.gov/ui/datasets/products/files/PTGRXML/2025/ipg250506.zip
+Recommended:
+https://data.uspto.gov/ui/datasets/products/files/PTGRXML/2025/ipg250506.zip
+https://data.uspto.gov/ui/datasets/products/files/PTGRXML/2025/ipg250429.zip
+https://data.uspto.gov/ui/datasets/products/files/PTGRXML/2025/ipg250422.zip
+https://data.uspto.gov/ui/datasets/products/files/PTGRXML/2025/ipg250415.zip
 
-place it in the staging directory:
+as there is definitely some synthetic biology stuff in there (CTC = G16B*) . 
+
+place them in the staging directory:
 ```bash
 cd ./datalake/staging/
 ```
@@ -90,7 +96,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional): Set to `true` to interpret `cpc_class` as a regex (default: false)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/inventors?cpc_class=^G16B&use_regex=true"
+  curl "http://localhost:5000/api/inventors?cpc_class=^G16B*&use_regex=true"
   ```
 - **Response:**
   ```json
@@ -104,7 +110,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/assignees?cpc_class=^G16B&use_regex=true"
+  curl "http://localhost:5000/api/assignees?cpc_class=^G16B*&use_regex=true"
   ```
 - **Response:**
   ```json
@@ -118,7 +124,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/titles?cpc_class=^G16B&use_regex=true"
+  curl "http://localhost:5000/api/titles?cpc_class=^G16B*&use_regex=true"
   ```
 - **Response:**
   ```json
@@ -132,7 +138,7 @@ Below are the available endpoints and example requests:
   - `use_regex` (optional)
 - **Example:**
   ```bash
-  curl "http://localhost:5000/api/summary?cpc_class=^G16B&use_regex=true"
+  curl "http://localhost:5000/api/summary?cpc_class=^G16B*&use_regex=true"
   ```
 - **Response:**
   ```json
@@ -140,23 +146,6 @@ Below are the available endpoints and example requests:
     "inventors": ["Inventor A", ...],
     "assignees": ["Assignee X", ...],
     "titles": ["Title 1", ...]
-  }
-  ```
-
-### 5. Debug Data Structure
-- **Endpoint:** `GET /api/debug`
-- **Example:**
-  ```bash
-  curl "http://localhost:5000/api/debug"
-  ```
-- **Response:**
-  ```json
-  {
-    "patent_data_length": 1,
-    "first_file_length": 100,
-    "sample_keys": ["inventors", "assignees", ...],
-    "inventors_field": ["Inventor A", ...],
-    "assignees_field": ["Assignee X", ...]
   }
   ```
 

@@ -13,18 +13,24 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+# Directory containing patent JSON files
 PATENTS_DIR = Path("datalake/transformed/patents")
 PATENTS_DATA: List[Dict] = []
 
 def load_flattened_patent_data() -> List[Dict]:
     """Load and flatten all patent JSON files from the patents directory into a single list of patent dicts."""
     patents = []
+    
     logger.info(f"Attempting to load patents from: {PATENTS_DIR.absolute()}")
+    
     if not PATENTS_DIR.exists():
         logger.error(f"Directory does not exist: {PATENTS_DIR.absolute()}")
         return patents
-    json_files = list(PATENTS_DIR.glob("*.json"))
+    
+    # Find all JSON files in the main directory and all subdirectories
+    json_files = list(PATENTS_DIR.glob('**/*.json'))
     logger.info(f"Found {len(json_files)} JSON files")
+    
     for json_file in json_files:
         try:
             logger.info(f"Loading file: {json_file}")
@@ -37,6 +43,7 @@ def load_flattened_patent_data() -> List[Dict]:
             logger.info(f"Successfully loaded {json_file}")
         except Exception as e:
             logger.error(f"Error loading {json_file}: {str(e)}")
+    
     logger.info(f"Total patent records loaded: {len(patents)}")
     return patents
 
