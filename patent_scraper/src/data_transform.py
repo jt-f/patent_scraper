@@ -59,42 +59,85 @@ def extract_patent_data(root_element):
 
     if bibliographic_data is not None:
         # Inventors
-        # Path: parties/applicants/applicant[@data-format='inventor'] or parties/inventors/inventor
-        applicants_element = bibliographic_data.find("./parties/applicants")
-        if applicants_element is not None:
-            for applicant in applicants_element.findall("./applicant[@data-format='inventor']"):
-                addressbook = applicant.find("./addressbook")
-                if addressbook is not None:
-                    last_name = addressbook.findtext("./last-name", default="").strip()
-                    first_name = addressbook.findtext("./first-name", default="").strip()
-                    if last_name or first_name:
-                        patent_data["inventors"].append(f"{first_name} {last_name}".strip())
-        
-        if not patent_data["inventors"]: # Fallback for older DTDs
-            inventors_element = bibliographic_data.find("./inventors")
+        # Find the <us-parties> element first
+        us_parties_element = bibliographic_data.find("./us-parties")
+
+        if us_parties_element is not None:
+            # Then find the <inventors> element within <us-parties>
+            inventors_element = us_parties_element.find("./inventors")
             if inventors_element is not None:
-                for inventor in inventors_element.findall("./inventor"):
-                    addressbook = inventor.find("./addressbook")
+                for inventor_node in inventors_element.findall("./inventor"):
+                    addressbook = inventor_node.find("./addressbook")
                     if addressbook is not None:
                         last_name = addressbook.findtext("./last-name", default="").strip()
                         first_name = addressbook.findtext("./first-name", default="").strip()
                         if last_name or first_name:
                             patent_data["inventors"].append(f"{first_name} {last_name}".strip())
-        
+
+        # If, for some reason, inventors might still be listed under us-applicants
+        # (though not in your provided example for individual inventors),
+        # you might adapt the first part of your original logic.
+        # However, for the XML you've shown, the above block is the one that will work.
+        # If you still want to keep the check for inventors disguised as applicants:
+
+        if not patent_data["inventors"] and us_parties_element is not None:
+            us_applicants_element = us_parties_element.find("./us-applicants")
+            if us_applicants_element is not None:
+                # Note: The attribute data-format='inventor' is speculative based on your original code.
+                # You'd need to confirm if inventors are ever actually tagged this way under <us-applicant>.
+                for applicant_node in us_applicants_element.findall("./us-applicant[@data-format='inventor']"):
+                    addressbook = applicant_node.find("./addressbook")
+                    if addressbook is not None:
+                        # Typically, if an orgname is present, it's not an individual inventor.
+                        if addressbook.find("./orgname") is None:
+                            last_name = addressbook.findtext("./last-name", default="").strip()
+                            first_name = addressbook.findtext("./first-name", default="").strip()
+                            if last_name or first_name:
+                                patent_data["inventors"].append(f"{first_name} {last_name}".strip())
+
         # Assignees/Companies
-        assignees_element = bibliographic_data.find("./assignees/assignee")
-        if assignees_element is not None: # If there's at least one assignee
-             for assignee in bibliographic_data.findall("./assignees/assignee"): # Iterate through all
+        assignees_found = False
+        
+        # Method 1: Standard USPTO format
+        assignees_element = bibliographic_data.find("./assignees")
+        if assignees_element is not None:
+            for assignee in assignees_element.findall("./assignee"):
                 addressbook = assignee.find("./addressbook")
                 if addressbook is not None:
                     orgname = addressbook.findtext("./orgname", default="").strip()
                     if orgname:
                         patent_data["assignees"].append(orgname)
+                        assignees_found = True
                     else: # Individual assignee
                         last_name = addressbook.findtext("./last-name", default="").strip()
                         first_name = addressbook.findtext("./first-name", default="").strip()
                         if last_name or first_name:
                             patent_data["assignees"].append(f"{first_name} {last_name}".strip())
+                            assignees_found = True
+        
+        # Method 2: Alternate location within parties
+        if not assignees_found:
+            assignees_element = bibliographic_data.find("./parties/assignees")
+            if assignees_element is not None:
+                for assignee in assignees_element.findall("./assignee"):
+                    addressbook = assignee.find("./addressbook")
+                    if addressbook is not None:
+                        orgname = addressbook.findtext("./orgname", default="").strip()
+                        if orgname:
+                            patent_data["assignees"].append(orgname)
+                            assignees_found = True
+                        else: # Individual assignee
+                            last_name = addressbook.findtext("./last-name", default="").strip()
+                            first_name = addressbook.findtext("./first-name", default="").strip()
+                            if last_name or first_name:
+                                patent_data["assignees"].append(f"{first_name} {last_name}".strip())
+                                assignees_found = True
+        
+        # Method 3: Very old format with assignee-name
+        if not assignees_found:
+            for assignee in root_element.findall(".//assignee-name"):
+                if assignee.text:
+                    patent_data["assignees"].append(assignee.text.strip())
         
         # Publication Date
         pub_date_element = bibliographic_data.find("./publication-reference/document-id/date")

@@ -71,8 +71,8 @@ def get_distinct_titles(patents: List[Dict]) -> Set[str]:
     """Get all distinct patent titles."""
     titles = set()
     for patent in patents:
-        if patent.get('title'):
-            titles.add(patent['title'])
+        if patent.get('invention_title'):
+            titles.add(patent['invention_title'])
     return titles
 
 def filter_by_cpc_classification(patents: List[Dict], cpc_class: str, use_regex: bool = False) -> List[Dict]:
@@ -153,6 +153,25 @@ def get_summary():
         'titles': list(get_distinct_titles(patents))
     }
     return jsonify(summary)
+
+@app.route('/api/debug', methods=['GET'])
+def debug_data():
+    """Endpoint to debug the structure of the loaded patent data."""
+    if not PATENTS_DATA:
+        return jsonify({"error": "No patent data loaded"})
+    
+    sample = PATENTS_DATA[0][0] if PATENTS_DATA[0] else {}
+    
+    result = {
+        "patent_data_length": len(PATENTS_DATA),
+        "first_file_length": len(PATENTS_DATA[0]) if PATENTS_DATA else 0,
+        "sample_keys": list(sample.keys()) if sample else [],
+        "inventors_field": sample.get("inventors", []) if sample else [],
+        "assignees_field": sample.get("assignees", []) if sample else [],
+        "title_field": sample.get("invention_title", "") if sample else ""
+    }
+    
+    return jsonify(result)
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
