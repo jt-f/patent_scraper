@@ -145,7 +145,8 @@ Below are the available endpoints and example requests:
   {
     "inventors": ["Inventor A", ...],
     "assignees": ["Assignee X", ...],
-    "titles": ["Title 1", ...]
+    "titles": ["Title 1", ...],
+    "summary": "Summary text"
   }
   ```
 

@@ -117,10 +117,14 @@ def api_summary(filtered_patents):
     """Return a summary of inventors, assignees, and titles from the loaded patent data."""
     if not filtered_patents:
         return jsonify({'inventors': [], 'assignees': [], 'titles': []})
+    inventors = get_distinct_inventors(filtered_patents)
+    assignees = get_distinct_assignees(filtered_patents)
+    titles = get_distinct_titles(filtered_patents)
     summary = {
-        'inventors': sorted(get_distinct_inventors(filtered_patents)),
-        'assignees': sorted(get_distinct_assignees(filtered_patents)),
-        'titles': sorted(get_distinct_titles(filtered_patents))
+        'inventors': sorted(inventors),
+        'assignees': sorted(assignees),
+        'titles': sorted(titles),
+        'summary': f'{len(filtered_patents)} records, {len(inventors)} inventors, {len(assignees)} assignees, {len(titles)} titles'
     }
     return jsonify(summary)
 
