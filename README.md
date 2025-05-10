@@ -23,5 +23,8 @@ https://python-poetry.org/docs/
  poetry install
  ```
 
- 
+### Create a mock datalake!
+./create_datalake.sh
+
+### Populate with any zip files you've downloaded
 
