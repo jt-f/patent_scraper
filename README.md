@@ -28,3 +28,7 @@ https://python-poetry.org/docs/
 
 ### Populate with any zip files you've downloaded
 
+
+
+### FUTURE:
+- validation of xml files
