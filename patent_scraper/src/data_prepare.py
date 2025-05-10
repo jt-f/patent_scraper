@@ -193,8 +193,6 @@ def split_concatenated_xml(concatenated_xml_file_path):
 
         print(f"Found {len(individual_xml_documents)} potential individual patent documents.")
         
-        if individual_xml_documents:
-            print(f"Saved first {min(3, len(individual_xml_documents))} documents of {len(individual_xml_documents)} to '{output_split_dir}' directory for inspection.")
 
     except Exception as e:
         print(f"Error splitting XML file {concatenated_xml_file_path}: {e}")
