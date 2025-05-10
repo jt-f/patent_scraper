@@ -53,7 +53,7 @@ as there is definitely some synthetic biology stuff in there (CTC = G16B*) .
 
 place them in the staging directory:
 ```bash
-cd ./datalake/staging/
+./datalake/staging/
 ```
 
 ## Clean and Populate the Datalake
