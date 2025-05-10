@@ -77,7 +77,11 @@ poetry run python patent_scraper/src/data_analyse.py
 The server will be available at [http://localhost:5000](http://localhost:5000).
 
 ## API Documentation
-The analytics server exposes several REST API endpoints for querying patent data. Below are the available endpoints and example requests:
+The analytics server exposes several REST API endpoints for querying patent data. 
+
+#### G16B is the CPC classification for Synthetic Biology.
+
+Below are the available endpoints and example requests:
 
 ### 1. Get Distinct Inventors
 - **Endpoint:** `GET /api/inventors`
